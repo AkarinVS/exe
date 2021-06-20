@@ -1,0 +1,85 @@
+Also note that you need http://gnuwin32.sourceforge.net/downlinks/regex-src-zip.php.
+And build with -O0, as any optimization will break the program in mysterious ways.
+
+diff -ur ed-1.17/buffer.c ed-1.17.patched/buffer.c
+--- ed-1.17/buffer.c
++++ ed-1.17.patched/buffer.c
+@@ -378,7 +378,9 @@
+ bool open_sbuf( void )
+   {
+   isbinary_ = false; reset_unterminated_line();
+-  sfp = tmpfile();
++  //sfp = tmpfile();
++  char *tmp = _tempnam(".", ".gnu-ed-tmpfile"); 
++  sfp = fopen(tmp, "w+");
+   if( !sfp )
+     {
+     show_strerror( 0, errno );
+@@ -394,7 +398,7 @@
+   long result;
+   if( !filename ) filename = "/";
+   errno = 0;
+-  result = pathconf( filename, _PC_PATH_MAX );
++  result = 255; //pathconf( filename, _PC_PATH_MAX );
+   if( result < 0 ) { if( errno ) result = 256; else result = 1024; }
+   else if( result < 256 ) result = 256;
+   return result;
+diff -ur ed-1.17/signal.c ed-1.17.patched/signal.c
+--- ed-1.17/signal.c
++++ ed-1.17.patched/signal.c
+@@ -23,9 +23,9 @@
+ #include <signal.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <termios.h>
++//#include <termios.h>
+ #include <unistd.h>
+-#include <sys/ioctl.h>
++//#include <sys/ioctl.h>
+ 
+ #include "ed.h"
+ 
+@@ -38,6 +38,7 @@
+ static bool sigint_pending = false;
+ 
+ 
++#if 0
+ static void sighup_handler( int signum )
+   {
+   if( signum ) {}			/* keep compiler happy */
+@@ -112,15 +113,16 @@
+ #endif
+   return sigaction( signum, &new_action, 0 );
+   }
+-
++#endif
++static int set_signal( const int signum, void (*handler)( int ) ) {}
+ 
+ void enable_interrupts( void )
+   {
+   if( --mutex <= 0 )
+     {
+     mutex = 0;
+-    if( sighup_pending ) sighup_handler( SIGHUP );
+-    if( sigint_pending ) sigint_handler( SIGINT );
++    //if( sighup_pending ) sighup_handler( SIGHUP );
++    //if( sigint_pending ) sigint_handler( SIGINT );
+     }
+   }
+ 
+@@ -130,13 +132,15 @@
+ 
+ void set_signals( void )
+   {
++#if 0
+ #ifdef SIGWINCH
+   sigwinch_handler( SIGWINCH );
+   if( isatty( 0 ) ) set_signal( SIGWINCH, sigwinch_handler );
+ #endif
+   set_signal( SIGHUP, sighup_handler );
+   set_signal( SIGQUIT, SIG_IGN );
+   set_signal( SIGINT, sigint_handler );
++#endif
+   }
+ 
+ 
